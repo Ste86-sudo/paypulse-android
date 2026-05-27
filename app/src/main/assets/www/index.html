@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <!-- Mobile-first viewport optimized for smartphone safe areas (viewport-fit=cover) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PayPulse - Monitor Spese Smart</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="PayPulse: l'applicazione web progressiva per monitorare, importare e categorizzare le tue spese personali in tempo reale estraendo dati dalle notifiche di banche, carte e PayPal.">
+  <meta name="theme-color" content="#09090b">
+  
+  <!-- Apple Web App Meta (PWA standalone mode iOS) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PayPulse">
+  <link rel="apple-touch-icon" href="icon.svg">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Google Fonts: Plus Jakarta Sans for premium modern look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- MOCK SYSTEM PUSH NOTIFICATION BANNER       -->
+  <!-- ========================================== -->
+  <div id="push-notification-banner" class="push-banner hidden" role="alert" aria-live="assertive">
+    <div class="push-header">
+      <div class="push-app-info">
+        <span class="push-app-icon" id="push-banner-app-icon">💳</span>
+        <span class="push-app-name" id="push-banner-app-name">Banca</span>
+      </div>
+      <span class="push-time">Adesso</span>
+    </div>
+    <div class="push-body">
+      <h4 class="push-title" id="push-banner-title">Nuova Transazione</h4>
+      <p class="push-text" id="push-banner-text">Hai speso €15,99 con la tua carta.</p>
+    </div>
+    <div class="push-action-hint">Tocca per registrare la spesa su PayPulse</div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MAIN APPLICATION CONTAINER                 -->
+  <!-- ========================================== -->
+  <div id="app-container" class="app-container">
+    
+    <!-- HEADER (Static across screens, dynamic titles) -->
+    <header class="main-header glass">
+      <div class="header-brand">
+        <span class="brand-logo">
+          <svg viewBox="0 0 512 512" width="24" height="24">
+            <rect x="30" y="30" width="452" height="452" rx="90" fill="url(#headerLogoGrad)"/>
+            <path d="M 96 300 Q 146 300 176 210 T 256 280 T 336 120 T 416 300" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs>
+              <linearGradient id="headerLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8b5cf6"/>
+                <stop offset="100%" stop-color="#ec4899"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <h1>PayPulse</h1>
+      </div>
+      <div class="header-actions">
+        <div id="online-badge" class="badge badge-success">Online</div>
+        <div class="user-avatar-wrapper">
+          <div class="user-avatar">SF</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- SCREEN: DASHBOARD (HOME)                   -->
+    <!-- ========================================== -->
+    <section id="screen-dashboard" class="app-screen active">
+      <!-- Balance Card -->
+      <div class="card balance-card glass glow-violet">
+        <div class="balance-meta">Saldo Disponibile Stimato</div>
+        <div class="balance-amount" id="dashboard-total-balance">€2.450,80</div>
+        <div class="balance-flow-grid">
+          <div class="flow-item flow-in">
+            <span class="flow-icon">↑</span>
+            <div class="flow-details">
+              <span class="flow-label">Entrate</span>
+              <span class="flow-val" id="dashboard-total-income">€3.200,00</span>
+            </div>
+          </div>
+          <div class="flow-item flow-out">
+            <span class="flow-icon">↓</span>
+            <div class="flow-details">
+              <span class="flow-label">Spese</span>
+              <span class="flow-val" id="dashboard-total-expenses">€749,20</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Android Native Sync Status Card -->
+      <div id="android-sync-banner" class="card glass glow-violet hidden">
+        <div class="card-header-icon-title">
+          <span class="card-icon">🤖</span>
+          <h3>Integrazione Android</h3>
+        </div>
+        <p class="card-subtitle" id="android-sync-subtitle">Cattura notifiche di spesa in background attiva.</p>
+        <div id="android-sync-action-area" class="paste-area-wrapper">
+          <!-- Dynamically loaded via app.js -->
+        </div>
+      </div>
+
+      <!-- Smart Paste Card -->
+      <div class="card smart-paste-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">⚡</span>
+          <h3>Importazione Rapida Notifiche</h3>
+        </div>
+        <p class="card-subtitle">Incolla qui il testo dell'SMS della banca o della notifica PayPal</p>
+        <div class="paste-area-wrapper">
+          <textarea id="smart-paste-input" placeholder="Es: PayPal: hai inviato 12,50 EUR a Netflix... oppure tieni premuto per incollare."></textarea>
+          <button id="smart-parse-btn" class="btn btn-primary btn-glow">Analizza Spesa</button>
+        </div>
+        <div id="parse-success-feedback" class="parse-feedback hidden">
+          <span class="feedback-icon">✅</span>
+          <span id="parse-feedback-message">Spesa registrata con successo!</span>
+        </div>
+      </div>
+
+      <!-- Quick Budgets Widget -->
+      <div class="card budget-widget-card glass">
+        <div class="card-header-between">
+          <div class="card-header-icon-title">
+            <span class="card-icon">🎯</span>
+            <h3>Budget Mensili</h3>
+          </div>
+          <button class="btn-text navigate-tab" data-target="screen-analisi">Vedi Tutti</button>
+        </div>
+        <div class="budget-progress-list" id="dashboard-budget-list">
+          <!-- Dynamically populated in app.js -->
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="card transactions-preview-card glass">
+        <div class="card-header-between">
+          <div class="card-header-icon-title">
+            <span class="card-icon">🕒</span>
+            <h3>Transazioni Recenti</h3>
+          </div>
+          <button class="btn-text navigate-tab" data-target="screen-transazioni">Vedi Tutte</button>
+        </div>
+        <div class="transaction-list" id="dashboard-transactions-list">
+          <!-- Dynamically populated in app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN: ANALISI (ANALYTICS)                -->
+    <!-- ========================================== -->
+    <section id="screen-analisi" class="app-screen">
+      <!-- Title -->
+      <div class="screen-title-area">
+        <h2>Analisi Spese</h2>
+        <span class="screen-subtitle">Statistiche e resoconto mensile</span>
+      </div>
+
+      <!-- Period selector -->
+      <div class="period-selector">
+        <button class="btn-pill active">Mese Corrente</button>
+        <button class="btn-pill">Mese Scorso</button>
+        <button class="btn-pill">3 Mesi</button>
+      </div>
+
+      <!-- Chart Card 1: Doughnut SVG Chart -->
+      <div class="card chart-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">📊</span>
+          <h3>Distribuzione per Categoria</h3>
+        </div>
+        <div class="chart-box">
+          <div class="svg-chart-container" id="category-donut-chart-container">
+            <!-- Dynamically populated SVG Chart -->
+          </div>
+          <div class="chart-legend" id="category-chart-legend">
+            <!-- Dynamic Legend -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart Card 2: Trend Line SVG Chart -->
+      <div class="card chart-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">📈</span>
+          <h3>Andamento delle Spese</h3>
+        </div>
+        <div class="chart-box-trend" id="trend-line-chart-container">
+          <!-- Dynamically populated SVG Line Chart -->
+        </div>
+      </div>
+
+      <!-- Detail Categories Budget & Spending -->
+      <div class="card categories-detail-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">🏷️</span>
+          <h3>Dettaglio Spese & Budget</h3>
+        </div>
+        <div class="category-detail-list" id="analysis-category-list">
+          <!-- Dynamically populated in app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN: TRANSAZIONI (HISTORY)              -->
+    <!-- ========================================== -->
+    <section id="screen-transazioni" class="app-screen">
+      <!-- Title -->
+      <div class="screen-title-area">
+        <h2>Transazioni</h2>
+        <span class="screen-subtitle">Storico completo e gestione</span>
+      </div>
+
+      <!-- Search and Filter Bar -->
+      <div class="search-filter-wrapper">
+        <div class="search-bar glass">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="transaction-search-input" placeholder="Cerca esercente o categoria...">
+          <button id="clear-search-btn" class="clear-search-btn hidden">×</button>
+        </div>
+        <div class="filter-pills-row" id="transaction-filter-pills">
+          <button class="btn-pill active" data-filter="all">Tutte</button>
+          <button class="btn-pill" data-filter="expense">Spese</button>
+          <button class="btn-pill" data-filter="income">Entrate</button>
+          <button class="btn-pill" data-filter="bank-paypal">PayPal</button>
+          <button class="btn-pill" data-filter="bank-intesa">Intesa SP</button>
+          <button class="btn-pill" data-filter="bank-revolut">Revolut</button>
+          <button class="btn-pill" data-filter="bank-postepay">PostePay</button>
+        </div>
+      </div>
+
+      <!-- Transactions List -->
+      <div class="history-list-wrapper" id="history-transactions-list">
+        <!-- Dynamically populated in app.js -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN: SIMULATORE NOTIFICHE               -->
+    <!-- ========================================== -->
+    <section id="screen-notifiche" class="app-screen">
+      <!-- Title -->
+      <div class="screen-title-area">
+        <h2>Notifiche Live</h2>
+        <span class="screen-subtitle">Testa il rilevamento push in tempo reale</span>
+      </div>
+
+      <!-- Explanation -->
+      <div class="card info-card glass">
+        <p>💡 <strong>Come testare:</strong> Clicca su uno dei bottoni qui sotto per simulare l'arrivo di una notifica push bancaria. Vedrai apparire un banner di sistema in cima allo schermo. <strong>Tocca il banner</strong> per vedere PayPulse catturare ed estrarre la spesa all'istante!</p>
+      </div>
+
+      <!-- Simulation Buttons -->
+      <div class="card simulations-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">🚀</span>
+          <h3>Simulazioni Preimpostate</h3>
+        </div>
+        <div class="btn-simulations-grid">
+          <button class="btn btn-secondary btn-sim" data-sim-type="paypal">
+            <span class="sim-icon">🔵</span>
+            <div class="sim-info">
+              <span class="sim-title">Notifica PayPal</span>
+              <span class="sim-desc">€14,99 a Spotify</span>
+            </div>
+          </button>
+          
+          <button class="btn btn-secondary btn-sim" data-sim-type="intesa">
+            <span class="sim-icon">🟢</span>
+            <div class="sim-info">
+              <span class="sim-title">SMS Intesa Sanpaolo</span>
+              <span class="sim-desc">€48,50 a Esselunga</span>
+            </div>
+          </button>
+          
+          <button class="btn btn-secondary btn-sim" data-sim-type="revolut">
+            <span class="sim-icon">🟣</span>
+            <div class="sim-info">
+              <span class="sim-title">Notifica Revolut</span>
+              <span class="sim-desc">€8,20 a Uber Trip</span>
+            </div>
+          </button>
+
+          <button class="btn btn-secondary btn-sim" data-sim-type="amex">
+            <span class="sim-icon">🔵</span>
+            <div class="sim-info">
+              <span class="sim-title">Notifica AMEX</span>
+              <span class="sim-desc">€95,00 a ENI Station</span>
+            </div>
+          </button>
+
+          <button class="btn btn-secondary btn-sim" data-sim-type="postepay">
+            <span class="sim-icon">🟡</span>
+            <div class="sim-info">
+              <span class="sim-title">SMS PostePay</span>
+              <span class="sim-desc">€39,99 a Zara Roma</span>
+            </div>
+          </button>
+
+          <button class="btn btn-secondary btn-sim" data-sim-type="n26">
+            <span class="sim-icon">teal</span>
+            <div class="sim-info">
+              <span class="sim-title">Notifica N26</span>
+              <span class="sim-desc">€12,00 a Deliveroo Italia</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Simulator -->
+      <div class="card custom-sim-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">✍️</span>
+          <h3>Crea Notifica Personalizzata</h3>
+        </div>
+        <p class="card-subtitle">Scrivi un testo a tuo piacimento contenente un importo (€) e un esercente per testare la potenza dell'algoritmo.</p>
+        <div class="custom-sim-form">
+          <div class="form-group">
+            <label for="custom-sim-bank">Sorgente/Banca Simulata</label>
+            <select id="custom-sim-bank">
+              <option value="PayPal">PayPal</option>
+              <option value="Intesa Sanpaolo">Intesa Sanpaolo</option>
+              <option value="Revolut">Revolut</option>
+              <option value="PostePay">PostePay</option>
+              <option value="AMEX">American Express</option>
+              <option value="N26">N26</option>
+              <option value="Banca Generica">Altra Banca</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="custom-sim-text">Testo Notifica / SMS</label>
+            <textarea id="custom-sim-text" placeholder="Es: Avviso SMS: addebito di EUR 24,00 a favore di Netflix.it effettuato con carta..."></textarea>
+          </div>
+          <button id="custom-sim-trigger-btn" class="btn btn-primary">Genera Notifica Push</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SCREEN: BANCHE & IMPOSTAZIONI (SETTINGS)   -->
+    <!-- ========================================== -->
+    <section id="screen-banche" class="app-screen">
+      <!-- Title -->
+      <div class="screen-title-area">
+        <h2>Open Banking</h2>
+        <span class="screen-subtitle">Collegamenti protetti e sincronizzazione</span>
+      </div>
+
+      <!-- Connection Status Card -->
+      <div class="card open-banking-status-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">🔒</span>
+          <h3>Sicurezza Bancaria Certificata</h3>
+        </div>
+        <p>I collegamenti sono protetti da crittografia end-to-end e rispettano la normativa PSD2 (Open Banking). In assenza di sincronizzazione automatica attiva per limitazioni OS, puoi usare l'<strong>Importazione Rapida</strong> con copia/incolla delle notifiche.</p>
+      </div>
+
+      <!-- Bank List Selection -->
+      <div class="card bank-list-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">🏦</span>
+          <h3>I Tuoi Conti Collegati (Simulazione)</h3>
+        </div>
+        <div class="bank-connection-list" id="bank-connection-list">
+          <!-- Dynamically populated toggles in app.js -->
+        </div>
+      </div>
+
+      <!-- Budget Setup Section -->
+      <div class="card budget-settings-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">⚙️</span>
+          <h3>Limiti di Spesa (Budget)</h3>
+        </div>
+        <div class="settings-budget-inputs" id="settings-budget-inputs">
+          <!-- Dynamically populated budget editors -->
+        </div>
+      </div>
+
+      <!-- App Management Cards -->
+      <div class="card danger-zone-card glass">
+        <div class="card-header-icon-title">
+          <span class="card-icon">⚠️</span>
+          <h3>Gestione Dati</h3>
+        </div>
+        <p class="card-subtitle">I dati di PayPulse risiedono esclusivamente sulla memoria locale del tuo smartphone.</p>
+        <div class="danger-actions">
+          <button id="reset-mock-data-btn" class="btn btn-secondary">Ripristina Dati Esempio</button>
+          <button id="clear-all-data-btn" class="btn btn-danger">Elimina Tutti i Dati</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- FLOATING ACTION BUTTON (FAB) & MODAL       -->
+    <!-- ========================================== -->
+    <button id="fab-add-expense" class="fab-btn btn-glow" aria-label="Aggiungi transazione manualmente">
+      <span class="fab-icon">+</span>
+    </button>
+
+    <!-- MANUAL EXPENSE MODAL OVERLAY -->
+    <div id="manual-expense-modal" class="modal-overlay hidden">
+      <div class="modal-content glass">
+        <div class="modal-header">
+          <h3>Aggiungi Spesa Manuale</h3>
+          <button id="close-modal-btn" class="close-btn">×</button>
+        </div>
+        <form id="manual-expense-form" class="modal-form">
+          <div class="form-group">
+            <label for="modal-input-amount">Importo (€) *</label>
+            <input type="number" id="modal-input-amount" step="0.01" min="0.01" placeholder="0.00" required>
+          </div>
+          
+          <div class="form-group-row">
+            <div class="form-group">
+              <label for="modal-input-type">Tipo</label>
+              <select id="modal-input-type">
+                <option value="expense">Spesa (Uscita)</option>
+                <option value="income">Entrata</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="modal-input-bank">Conto/Banca</label>
+              <select id="modal-input-bank">
+                <option value="PayPal">PayPal</option>
+                <option value="Intesa SP">Intesa Sanpaolo</option>
+                <option value="Revolut">Revolut</option>
+                <option value="PostePay">PostePay</option>
+                <option value="AMEX">American Express</option>
+                <option value="N26">N26</option>
+                <option value="Contanti">Contanti</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="modal-input-merchant">Esercente / Descrizione *</label>
+            <input type="text" id="modal-input-merchant" placeholder="Es. Amazon, Bar Centrale, Stipendio..." required>
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-group">
+              <label for="modal-input-category">Categoria</label>
+              <select id="modal-input-category">
+                <option value="Spesa">🛒 Spesa Alimentare</option>
+                <option value="Intrattenimento">🎬 Intrattenimento</option>
+                <option value="Trasporti">🚗 Trasporti/Auto</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Ristorazione">🍔 Ristoranti & Bar</option>
+                <option value="Utenze">🏠 Casa & Bollette</option>
+                <option value="Stipendio">💰 Stipendio & Bonus</option>
+                <option value="Altro">🏷️ Altro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="modal-input-date">Data</label>
+              <input type="date" id="modal-input-date">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-glow btn-full">Salva Transazione</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM NAVIGATION BAR (FIXED/STICKY)      -->
+    <!-- ========================================== -->
+    <nav class="bottom-nav glass">
+      <button class="nav-item active" data-target="screen-dashboard">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        <span class="nav-label">Home</span>
+      </button>
+      
+      <button class="nav-item" data-target="screen-analisi">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+        </svg>
+        <span class="nav-label">Analisi</span>
+      </button>
+      
+      <button class="nav-item" data-target="screen-transazioni">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0-2-.9-2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>
+        </svg>
+        <span class="nav-label">Lista</span>
+      </button>
+
+      <button class="nav-item" data-target="screen-notifiche">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+        </svg>
+        <span class="nav-label">Simula</span>
+      </button>
+
+      <button class="nav-item" data-target="screen-banche">
+        <svg class="nav-icon" viewBox="0 0 24 24">
+          <path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h17V6L11.5 1z"/>
+        </svg>
+        <span class="nav-label">Banche</span>
+      </button>
+    </nav>
+    
+  </div>
+
+  <!-- JavaScript logic loaded at end -->
+  <script src="app.js"></script>
+</body>
+</html>
