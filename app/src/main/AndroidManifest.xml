@@ -12,7 +12,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="PayPulse"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:theme="@style/Theme.PayPulse"
         tools:targetApi="31">
         
         <!-- MAIN LAUNCHER ACTIVITY -->

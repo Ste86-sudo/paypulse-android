@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.PayPulse" parent="Theme.AppCompat.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">#8b5cf6</item>
+        <item name="colorPrimaryDark">#09090b</item>
+        <item name="colorAccent">#ec4899</item>
+    </style>
+</resources>
